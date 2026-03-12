@@ -36,7 +36,7 @@ graph TD
 
 | Component | Technology | Purpose |
 |-----------|-----------|---------|
-| FastAPI app | Python 3.11 + uvicorn | REST API server, SSE streaming |
+| FastAPI app | Python 3.11 + uvicorn | REST API server, SSE streaming; listens on `$PORT` (Railway) or 8000 |
 | Story Agent | anthropic SDK | Generates gene stories on demand, caches to DB |
 | Cache Integrity Monitor | asyncio background task | Hourly check for uncached visited genes |
 
@@ -47,7 +47,7 @@ graph TD
 | React App | React 18 + Vite | Book-like UI, chapter list, reading view |
 | ChromosomeIdeogram | Custom SVG | Draws chromosome bands, highlights gene position |
 | SearchBar | React component | Gene name search with debounce |
-| Nginx | nginx:alpine | Serves static files, proxies /api/* to backend |
+| Nginx | nginx:alpine | Serves static files, proxies /api/* to backend; port and API URL substituted at startup via `docker-entrypoint.sh` |
 
 ### Layer 4 — Agents
 
@@ -154,6 +154,22 @@ Key details:
 
 ---
 
+## Railway Deployment Support
+
+The application supports deployment on [Railway](https://railway.app/) via dynamic port and
+API URL configuration:
+
+- **API container**: `uvicorn` listens on `${PORT:-8000}`. Railway injects `$PORT` at runtime;
+  the default of `8000` is used for local Docker Compose.
+- **Frontend container**: `nginx.conf` is treated as a template (`default.conf.template`).
+  At container startup, `docker-entrypoint.sh` runs `sed` to substitute two placeholders:
+  - `__PORT__` → `$PORT` (Railway public port) or `80` (default)
+  - `__API_URL__` → `$API_URL` (Railway internal API address) or `http://api:8000` (default)
+
+  The resolved config is written to `/etc/nginx/conf.d/default.conf` before nginx starts.
+
+---
+
 ## File Structure
 
 ```
@@ -184,7 +200,8 @@ gene_story/
 │   │   │   ├── ChromosomeIdeogram.jsx ← SVG chromosome visualisation
 │   │   │   └── SearchBar.jsx          ← Gene name search
 │   │   └── styles/app.css   ← Book-like UI styles
-│   └── nginx.conf           ← Static file serving + API proxy
+│   ├── docker-entrypoint.sh ← Substitutes PORT and API_URL into nginx config at startup
+│   └── nginx.conf           ← Static file serving + API proxy (template with __PORT__ and __API_URL__)
 ├── agents/
 │   ├── review_agent.py      ← /review slash command
 │   ├── architect_agent.py   ← Post-commit hook (updates this doc)
@@ -223,6 +240,11 @@ docker compose build   # proxy args forwarded automatically
 docker compose up -d   # proxy env vars also passed to API container at runtime
 ```
 
+### Railway
+Set the following environment variables in the Railway dashboard:
+- `API_URL` — internal URL of the API service (e.g. `http://api.railway.internal:8000`)
+- `PORT` is injected automatically by Railway for both the API and frontend services.
+
 ### Production (Hetzner VPS)
 See README.md for full deployment instructions.
 
@@ -239,3 +261,4 @@ See README.md for full deployment instructions.
 | 2026-03-12 | fix: Docker proxy and SSL support — all Dockerfiles accept HTTP_PROXY/HTTPS_PROXY build args; pip and npm tolerate proxy-intercepted TLS; cytoband downloader uses unverified SSL context; parser DB host-rewrite removed |
 | 2026-03-12 | fix: relax psycopg2-binary version pin to >=2.9.9 in parser/requirements.txt |
 | 2026-03-12 | fix: pass proxy env vars to API container at runtime — HTTP_PROXY/HTTPS_PROXY/NO_PROXY (and lowercase) now forwarded to the running API container; static extra_hosts entries added for Anthropic API hostnames |
+| 2026-03-12 | fix: Railway deployment — dynamic PORT and nginx API proxy — API listens on $PORT; nginx port and backend URL substituted at startup via docker-entrypoint.sh and nginx.conf template |
