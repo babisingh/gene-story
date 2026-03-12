@@ -178,8 +178,8 @@ gene_story/
 ### Local Development
 ```bash
 docker compose up -d postgres
-docker compose run --rm --profile tools parser python gtf_parser.py
-docker compose run --rm --profile tools parser python load_cytoband.py
+docker compose run --rm parser python gtf_parser.py
+docker compose run --rm parser python load_cytoband.py
 docker compose up -d
 # Frontend: http://localhost:3000
 # API docs: http://localhost:8000/docs
@@ -196,3 +196,4 @@ See README.md for full deployment instructions.
 |------|--------|
 | 2026-03-12 | Initial architecture — all core components created |
 | 2026-03-12 | feat: initial commit — all application files added (parser, API, frontend, agents, schema, docs, CLAUDE.md, .env.example) |
+| 2026-03-12 | fix: removed Docker Compose `profiles` constraint from parser service — `docker compose run --rm parser` now works directly without `--profile tools` |
