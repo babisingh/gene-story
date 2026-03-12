@@ -89,6 +89,10 @@ graph TD
 The `properties JSONB` column on `genes` is intentionally open-ended — future enrichment
 (OMIM IDs, UniProt, GTEx expression, etc.) can be added without schema migrations.
 
+The `genestory` application user is granted `ALL PRIVILEGES` on all tables and sequences in the
+`public` schema. This is handled at the end of `db/init.sql`, since the superuser (`POSTGRES_USER`)
+creates the tables and the app user requires explicit grants.
+
 ---
 
 ## Four-Layer Story Caching Guarantee
@@ -131,7 +135,7 @@ Subsequent visits → Cache hit → instant return
 gene_story/
 ├── data/                    ← GTF file (not committed, too large)
 ├── db/
-│   └── init.sql             ← Database schema (runs on first container start)
+│   └── init.sql             ← Database schema + user grants (runs on first container start)
 ├── parser/
 │   ├── gtf_parser.py        ← Parses GENCODE GTF → PostgreSQL
 │   ├── load_cytoband.py     ← Downloads UCSC cytobands → PostgreSQL
@@ -197,3 +201,4 @@ See README.md for full deployment instructions.
 | 2026-03-12 | Initial architecture — all core components created |
 | 2026-03-12 | feat: initial commit — all application files added (parser, API, frontend, agents, schema, docs, CLAUDE.md, .env.example) |
 | 2026-03-12 | fix: removed Docker Compose `profiles` constraint from parser service — `docker compose run --rm parser` now works directly without `--profile tools` |
+| 2026-03-12 | fix: grant table permissions to genestory user in init.sql — superuser-created tables now explicitly accessible to the app user |
