@@ -110,3 +110,10 @@ CREATE INDEX IF NOT EXISTS idx_cytobands_chromosome  ON cytobands(chromosome);
 CREATE INDEX IF NOT EXISTS idx_gene_visits_gene_id   ON gene_visits(gene_id);
 CREATE INDEX IF NOT EXISTS idx_story_errors_gene_id  ON story_errors(gene_id);
 CREATE INDEX IF NOT EXISTS idx_stories_verified      ON gene_stories(verified);
+
+
+-- ─── Grant permissions to the application user ────────────────────────────────
+-- The POSTGRES_USER in docker-compose creates tables as the superuser.
+-- This grants the app user (genestory) read/write access to everything.
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO genestory;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO genestory;
