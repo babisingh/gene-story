@@ -1,5 +1,3 @@
-version: "3.9"
-
 # Gene Story — Docker Compose
 # Runs four services:
 #   postgres  — the database (always running)
@@ -60,18 +58,19 @@ services:
       - api
 
   # ─── GTF Parser (run manually, exits after completion) ───────────────────────
+  # Run with:
+  #   docker compose run --rm parser python gtf_parser.py
+  #   docker compose run --rm parser python load_cytoband.py
   parser:
     build: ./parser
     env_file: .env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     volumes:
-      - ./data:/app/data     # mounts the downloaded GTF file
+      - ./data:/app/data     # mounts the downloaded GTF file into the container
     depends_on:
       postgres:
         condition: service_healthy
-    profiles:
-      - tools               # only runs when explicitly called
 
 volumes:
   postgres_data:            # named volume keeps DB data safe across restarts
